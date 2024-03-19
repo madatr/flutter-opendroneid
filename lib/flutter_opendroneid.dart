@@ -1,4 +1,5 @@
 import 'dart:async';
+// import 'dart:developer';
 import 'dart:io';
 
 import 'package:dart_opendroneid/dart_opendroneid.dart';
@@ -107,6 +108,7 @@ class FlutterOpenDroneId {
               DateTime.fromMillisecondsSinceEpoch(payload.receivedTimestamp),
         );
     final message = parseODIDMessage(payload.rawData);
+    // log("MADATR: Internal1: message: ${message!.rawContent}");
     if (message == null) return;
     final updatedPack = storedPack.update(
       message: message,

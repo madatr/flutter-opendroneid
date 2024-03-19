@@ -48,7 +48,6 @@ typedef NS_ENUM(NSUInteger, DTGWifiState) {
 /// Payload send from native to dart contains raw data and metadata
 @interface DTGODIDPayload : NSObject
 /// `init` unavailable to enforce nonnull fields, see the `make` class method.
-- (NSArray *)toList;
 - (instancetype)init NS_UNAVAILABLE;
 + (instancetype)makeWithRawData:(FlutterStandardTypedData *)rawData
     receivedTimestamp:(NSNumber *)receivedTimestamp
