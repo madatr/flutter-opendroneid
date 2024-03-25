@@ -114,6 +114,7 @@ class FlutterOpenDroneId {
       message: message,
       receivedTimestamp: payload.receivedTimestamp,
       rssi: payload.rssi,
+      afterProcess: DateTime.now(),
       source: payload.source,
     );
     // update was refused if updatedPack is null

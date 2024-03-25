@@ -9,6 +9,7 @@ import 'package:flutter_opendroneid/pigeon.dart' as pigeon;
 class MessageContainer {
   final String macAddress;
   final DateTime lastUpdate;
+
   final pigeon.MessageSource source;
   final int? lastMessageRssi;
 
@@ -18,11 +19,13 @@ class MessageContainer {
   final SelfIDMessage? selfIdMessage;
   final AuthMessage? authenticationMessage;
   final SystemMessage? systemDataMessage;
+  final DateTime? afterProcess;
 
   MessageContainer({
     required this.macAddress,
     required this.lastUpdate,
     required this.source,
+    this.afterProcess,
     this.lastMessageRssi,
     this.basicIdMessage,
     this.locationMessage,
@@ -36,6 +39,7 @@ class MessageContainer {
     String? macAddress,
     int? lastMessageRssi,
     DateTime? lastUpdate,
+    DateTime? afterProcess,
     pigeon.MessageSource? source,
     BasicIDMessage? basicIdMessage,
     LocationMessage? locationMessage,
@@ -48,6 +52,7 @@ class MessageContainer {
         macAddress: macAddress ?? this.macAddress,
         lastMessageRssi: lastMessageRssi ?? this.lastMessageRssi,
         lastUpdate: lastUpdate ?? DateTime.now(),
+        afterProcess: afterProcess,
         source: source ?? this.source,
         basicIdMessage: basicIdMessage ?? this.basicIdMessage,
         locationMessage: locationMessage ?? this.locationMessage,
@@ -66,6 +71,7 @@ class MessageContainer {
     required int receivedTimestamp,
     required pigeon.MessageSource source,
     int? rssi,
+    DateTime? afterProcess,
   }) {
     if (message.runtimeType == MessagePack) {
       final messages = (message as MessagePack).messages;
@@ -75,6 +81,7 @@ class MessageContainer {
           message: packMessage,
           receivedTimestamp: receivedTimestamp,
           source: source,
+          afterProcess: afterProcess,
         );
         if (update != null) result = update;
       }
@@ -91,6 +98,7 @@ class MessageContainer {
               lastUpdate:
                   DateTime.fromMillisecondsSinceEpoch(receivedTimestamp),
               source: source,
+              afterProcess: afterProcess,
             ),
       BasicIDMessage => basicIdMessage != null &&
               basicIdMessage!.containsEqualData(message as BasicIDMessage)
@@ -101,6 +109,7 @@ class MessageContainer {
               lastUpdate:
                   DateTime.fromMillisecondsSinceEpoch(receivedTimestamp),
               source: source,
+              afterProcess: afterProcess,
             ),
       SelfIDMessage => selfIdMessage != null &&
               selfIdMessage!.containsEqualData(message as SelfIDMessage)
@@ -111,6 +120,7 @@ class MessageContainer {
               lastUpdate:
                   DateTime.fromMillisecondsSinceEpoch(receivedTimestamp),
               source: source,
+              afterProcess: afterProcess,
             ),
       OperatorIDMessage => operatorIdMessage != null &&
               operatorIdMessage!.containsEqualData(message as OperatorIDMessage)
@@ -121,6 +131,7 @@ class MessageContainer {
               lastUpdate:
                   DateTime.fromMillisecondsSinceEpoch(receivedTimestamp),
               source: source,
+              afterProcess: afterProcess,
             ),
       AuthMessage => authenticationMessage != null &&
               authenticationMessage!.containsEqualData(message as AuthMessage)
@@ -131,6 +142,7 @@ class MessageContainer {
               lastUpdate:
                   DateTime.fromMillisecondsSinceEpoch(receivedTimestamp),
               source: source,
+              afterProcess: afterProcess,
             ),
       SystemMessage => systemDataMessage != null &&
               systemDataMessage!.containsEqualData(message as SystemMessage)
@@ -141,6 +153,7 @@ class MessageContainer {
               lastUpdate:
                   DateTime.fromMillisecondsSinceEpoch(receivedTimestamp),
               source: source,
+              afterProcess: afterProcess,
             ),
       _ => null
     };
