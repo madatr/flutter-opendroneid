@@ -78,11 +78,11 @@ class MessageContainer {
       var result = this;
       for (var packMessage in messages) {
         final update = result.update(
-          message: packMessage,
-          receivedTimestamp: receivedTimestamp,
-          source: source,
-          afterProcess: afterProcess,
-        );
+            message: packMessage,
+            receivedTimestamp: receivedTimestamp,
+            source: source,
+            afterProcess: afterProcess,
+            rssi: rssi);
         if (update != null) result = update;
       }
       return result;
