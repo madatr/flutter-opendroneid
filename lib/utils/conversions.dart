@@ -113,13 +113,26 @@ extension SpeedAccuracyConversion on SpeedAccuracy {
 }
 
 extension UASIDConversion on UASID {
-  String? asString() => switch (this) {
-        IDNone() => null,
-        SerialNumber(serialNumber: final sn) => sn,
-        CAARegistrationID(registrationID: final regId) => regId,
-        UTMAssignedID(id: final id) => id.toHexString(),
-        SpecificSessionID(id: final id) => id.toHexString(),
-      };
+  String? asString() {
+    return _asStringSwitch(this);
+  }
+
+  String? _asStringSwitch(UASID uasid) {
+    switch (uasid.runtimeType) {
+      case IDNone:
+        return null;
+      case SerialNumber:
+        return (uasid as SerialNumber).serialNumber;
+      case CAARegistrationID:
+        return (uasid as CAARegistrationID).registrationID;
+      case UTMAssignedID:
+        return (uasid as UTMAssignedID).id.toHexString();
+      case SpecificSessionID:
+        return (uasid as SpecificSessionID).id.toHexString();
+      default:
+        return null; // Handle additional cases if needed
+    }
+  }
 }
 
 extension IDTypeConversion on IDType {

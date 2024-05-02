@@ -1,14 +1,37 @@
 import 'package:dart_opendroneid/dart_opendroneid.dart';
-import 'package:flutter_opendroneid/extensions/compare_extension.dart';
-import 'package:flutter_opendroneid/models/constants.dart';
-import 'package:flutter_opendroneid/pigeon.dart' as pigeon;
+
+import '../extensions/compare_extension.dart';
+import '../pigeon.dart' as pigeon;
+import 'constants.dart';
 
 /// The [MessageContainer] groups together messages of different types
 /// from one device. It contains one instance of each message. The container is
 /// then sent using stream to client of the library.
+///
+
+extension MessageSourceExtension on pigeon.MessageSource {
+  String toJsonString() {
+    switch (this) {
+      case pigeon.MessageSource.BluetoothLegacy:
+        return 'BluetoothLegacy';
+      case pigeon.MessageSource.BluetoothLongRange:
+        return 'BluetoothLongRange';
+      case pigeon.MessageSource.WifiNan:
+        return 'WifiNan';
+      case pigeon.MessageSource.WifiBeacon:
+        return 'WifiBeacon';
+      case pigeon.MessageSource.Unknown:
+        return 'Unknown';
+    }
+  }
+}
+
 class MessageContainer {
   final String macAddress;
   final DateTime lastUpdate;
+  final DateTime rxTime;
+  DateTime? txTime;
+  final DateTime? postProcessTime;
 
   final pigeon.MessageSource source;
   final int? lastMessageRssi;
@@ -19,13 +42,14 @@ class MessageContainer {
   final SelfIDMessage? selfIdMessage;
   final AuthMessage? authenticationMessage;
   final SystemMessage? systemDataMessage;
-  final DateTime? afterProcess;
 
   MessageContainer({
     required this.macAddress,
     required this.lastUpdate,
     required this.source,
-    this.afterProcess,
+    required this.rxTime,
+    this.txTime,
+    this.postProcessTime,
     this.lastMessageRssi,
     this.basicIdMessage,
     this.locationMessage,
@@ -35,11 +59,38 @@ class MessageContainer {
     this.systemDataMessage,
   });
 
+  @override
+  String toString() =>
+      "{Mac: $macAddress \n ${basicIdMessage != null ? basicIdMessage.toString() : "BasicIDMessage: NULL"} \n ${locationMessage != null ? locationMessage.toString() : "LocationMessage: NULL"} \n ${operatorIdMessage != null ? operatorIdMessage.toString() : "OperatorIdMessage: NULL"} \n ${selfIdMessage != null ? selfIdMessage.toString() : "SelfIdMessage: NULL"} \n ${authenticationMessage != null ? authenticationMessage.toString() : "AuthenticationMessage: NULL"} \n ${systemDataMessage != null ? systemDataMessage.toString() : "SystemDataMessage: NULL"} \n }";
+
+  Map<String, dynamic> toJson() {
+    return {
+      'macAddress': macAddress.toString(),
+      'lastUpdate': lastUpdate.toIso8601String(),
+      'source': source.toJsonString(),
+      'lastMessageRssi': lastMessageRssi.toString(),
+      'basicIdMessage':
+          basicIdMessage != null ? basicIdMessage?.toJson() : "NULL",
+      'locationMessage':
+          locationMessage != null ? locationMessage?.toJson() : "NULL",
+      'operatorIdMessage':
+          operatorIdMessage != null ? operatorIdMessage?.toJson() : "NULL",
+      'selfIdMessage': selfIdMessage != null ? selfIdMessage?.toJson() : "NULL",
+      'authenticationMessage': authenticationMessage != null
+          ? authenticationMessage?.toJson()
+          : "NULL",
+      'systemDataMessage':
+          systemDataMessage != null ? systemDataMessage?.toJson() : "NULL",
+      'postProcessTime':
+          postProcessTime != null ? postProcessTime?.toIso8601String() : "NULL",
+    };
+  }
+
   MessageContainer copyWith({
     String? macAddress,
     int? lastMessageRssi,
     DateTime? lastUpdate,
-    DateTime? afterProcess,
+    DateTime? postProcessTime,
     pigeon.MessageSource? source,
     BasicIDMessage? basicIdMessage,
     LocationMessage? locationMessage,
@@ -47,12 +98,15 @@ class MessageContainer {
     SelfIDMessage? selfIdMessage,
     AuthMessage? authenticationMessage,
     SystemMessage? systemDataMessage,
+    required DateTime rxTime,
   }) =>
       MessageContainer(
         macAddress: macAddress ?? this.macAddress,
+        rxTime: rxTime,
+        txTime: txTime ?? txTime,
         lastMessageRssi: lastMessageRssi ?? this.lastMessageRssi,
         lastUpdate: lastUpdate ?? DateTime.now(),
-        afterProcess: afterProcess,
+        postProcessTime: postProcessTime,
         source: source ?? this.source,
         basicIdMessage: basicIdMessage ?? this.basicIdMessage,
         locationMessage: locationMessage ?? this.locationMessage,
@@ -71,17 +125,19 @@ class MessageContainer {
     required int receivedTimestamp,
     required pigeon.MessageSource source,
     int? rssi,
-    DateTime? afterProcess,
+    DateTime? postProcessTime,
+    required DateTime rxTime,
   }) {
     if (message.runtimeType == MessagePack) {
       final messages = (message as MessagePack).messages;
       var result = this;
       for (var packMessage in messages) {
         final update = result.update(
+            rxTime: rxTime,
             message: packMessage,
             receivedTimestamp: receivedTimestamp,
             source: source,
-            afterProcess: afterProcess,
+            postProcessTime: postProcessTime,
             rssi: rssi);
         if (update != null) result = update;
       }
@@ -93,67 +149,73 @@ class MessageContainer {
               locationMessage!.containsEqualData(message as LocationMessage)
           ? null
           : copyWith(
+              rxTime: rxTime,
               locationMessage: message as LocationMessage,
               lastMessageRssi: rssi,
               lastUpdate:
                   DateTime.fromMillisecondsSinceEpoch(receivedTimestamp),
               source: source,
-              afterProcess: afterProcess,
+              postProcessTime: postProcessTime,
             ),
       BasicIDMessage => basicIdMessage != null &&
               basicIdMessage!.containsEqualData(message as BasicIDMessage)
           ? null
           : copyWith(
+              rxTime: rxTime,
               basicIdMessage: message as BasicIDMessage,
               lastMessageRssi: rssi,
               lastUpdate:
                   DateTime.fromMillisecondsSinceEpoch(receivedTimestamp),
               source: source,
-              afterProcess: afterProcess,
+              postProcessTime: postProcessTime,
             ),
       SelfIDMessage => selfIdMessage != null &&
               selfIdMessage!.containsEqualData(message as SelfIDMessage)
           ? null
           : copyWith(
+              rxTime: rxTime,
               selfIdMessage: message as SelfIDMessage,
               lastMessageRssi: rssi,
               lastUpdate:
                   DateTime.fromMillisecondsSinceEpoch(receivedTimestamp),
               source: source,
-              afterProcess: afterProcess,
+              postProcessTime: postProcessTime,
             ),
       OperatorIDMessage => operatorIdMessage != null &&
               operatorIdMessage!.containsEqualData(message as OperatorIDMessage)
           ? null
           : copyWith(
+              rxTime: rxTime,
               operatorIdMessage: message as OperatorIDMessage,
               lastMessageRssi: rssi,
               lastUpdate:
                   DateTime.fromMillisecondsSinceEpoch(receivedTimestamp),
               source: source,
-              afterProcess: afterProcess,
+              postProcessTime: postProcessTime,
             ),
       AuthMessage => authenticationMessage != null &&
               authenticationMessage!.containsEqualData(message as AuthMessage)
           ? null
           : copyWith(
+              rxTime: rxTime,
               authenticationMessage: message as AuthMessage,
               lastMessageRssi: rssi,
               lastUpdate:
                   DateTime.fromMillisecondsSinceEpoch(receivedTimestamp),
               source: source,
-              afterProcess: afterProcess,
+              postProcessTime: postProcessTime,
             ),
       SystemMessage => systemDataMessage != null &&
               systemDataMessage!.containsEqualData(message as SystemMessage)
           ? null
           : copyWith(
+              rxTime: rxTime,
               systemDataMessage: message as SystemMessage,
               lastMessageRssi: rssi,
               lastUpdate:
                   DateTime.fromMillisecondsSinceEpoch(receivedTimestamp),
               source: source,
-              afterProcess: afterProcess,
+              postProcessTime: postProcessTime,
             ),
       _ => null
     };

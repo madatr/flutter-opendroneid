@@ -17,6 +17,7 @@ export 'package:dart_opendroneid/src/types.dart';
 enum UsedTechnologies { Wifi, Bluetooth, Both, None }
 
 class FlutterOpenDroneId {
+  static int count = 0;
   static late pigeon.Api _api = pigeon.Api();
   static const odidPayloadEventChannel =
       const EventChannel('flutter_odid_data');
@@ -59,9 +60,11 @@ class FlutterOpenDroneId {
   /// To further receive data, listen to
   /// streams.
   static Future<void> startScan(UsedTechnologies usedTechnologies) async {
-    _odidDataSubscription = odidPayloadEventChannel
-        .receiveBroadcastStream()
-        .listen((payload) => _updatePacks(pigeon.ODIDPayload.decode(payload)));
+    _odidDataSubscription =
+        odidPayloadEventChannel.receiveBroadcastStream().listen((payload) {
+      DateTime now = DateTime.now();
+      _updatePacks(pigeon.ODIDPayload.decode(payload), now);
+    });
 
     if (usedTechnologies == UsedTechnologies.Bluetooth ||
         usedTechnologies == UsedTechnologies.Both) {
@@ -100,9 +103,12 @@ class FlutterOpenDroneId {
 
   static Future<bool> get isScanningWifi async => await _api.isScanningWifi();
 
-  static void _updatePacks(pigeon.ODIDPayload payload) {
+  static void _updatePacks(pigeon.ODIDPayload payload, DateTime rxTime) {
+    // log("EXPORTER_LOG: PACK ($count): ${payload.receivedTimestamp}");
+    count++;
     final storedPack = _storedPacks[payload.macAddress] ??
         MessageContainer(
+          rxTime: rxTime,
           macAddress: payload.macAddress,
           source: payload.source,
           lastUpdate:
@@ -110,16 +116,27 @@ class FlutterOpenDroneId {
         );
     final message = parseODIDMessage(payload.rawData);
     // log("MADATR: Internal1: payload.rssi: ${payload.rssi}");
-    if (message == null) return;
+
+    if (message == null) {
+      log("EXPORTER_LOG: MESSAGE NULL");
+      return;
+    }
+    // log("EXPORTER_LOG: PACK UD 1: ${payload.receivedTimestamp}");
+
     final updatedPack = storedPack.update(
+      rxTime: rxTime,
       message: message,
       receivedTimestamp: payload.receivedTimestamp,
       rssi: payload.rssi,
-      afterProcess: DateTime.now(),
+      postProcessTime: DateTime.now(),
       source: payload.source,
     );
+    // log("EXPORTER_LOG: PACK UD 2: ${payload.receivedTimestamp}");
+
     // update was refused if updatedPack is null
     if (updatedPack != null) {
+      // log("EXPORTER_LOG: PACK UD 3: ${payload.receivedTimestamp}");
+
       _storedPacks[payload.macAddress] = updatedPack;
       _packController.add(updatedPack);
     }
